@@ -21,6 +21,16 @@
 "   Do Trung Nguyen   <dtngn@dtngn.org>               2021
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
+function s:CscopeDbAdd(csfile)
+    " hide msg to avoid asking user confirmation when adding cscope database
+    set nocscopeverbose
+
+    execute("cscope add " . a:csfile)
+
+    " show msg when any other cscope db added
+    set cscopeverbose
+endfunction
+
 " This tests to see if vim was configured with the '--enable-cscope' option
 " when it was compiled.  If it wasn't, time to recompile vim...
 if has("cscope")
@@ -34,37 +44,33 @@ if has("cscope")
     " if you want the reverse search order.
     set csto=0
 
-    " hide msg when adding cscope database at start
-    set nocscopeverbose
+    " check if any cscope database was already added
+    if trim(execute('cscope show')) == 'no cscope connections'
+        " Find and add a cscope file. Either from CSCOPE_DB or by searching for it
+        " recursively starting in the CWD and going up to /
+        if $CSCOPE_DB != ""
+            call s:CscopeDbAdd($CSCOPE_DB)
+        else
+            " Get all parts of our current path
+            let dirs = split($PWD, '/')
+            " Start building a list of paths in which to look for cscope.out
+            let paths = ['/']
+            " /foo/bar/baz would result in the `paths` array containing:
+            " [/ /foo /foo/bar /foo/bar/baz]
+            for d in dirs
+                let paths = add(paths, paths[len(paths) - 1] . d . '/')
+            endfor
 
-    " Find and add a cscope file. Either from CSCOPE_DB or by searching for it
-    " recursively starting in the CWD and going up to /
-    if $CSCOPE_DB != ""
-        cs add $CSCOPE_DB
-    else
-        " Get all parts of our current path
-        let dirs = split($PWD, '/')
-        " Start building a list of paths in which to look for cscope.out
-        let paths = ['/']
-        " /foo/bar/baz would result in the `paths` array containing:
-        " [/ /foo /foo/bar /foo/bar/baz]
-        for d in dirs
-            let paths = add(paths, paths[len(paths) - 1] . d . '/')
-        endfor
-
-        " List is backwards search order, so reverse it.
-        for d in reverse(paths)
-            let cscope_file = d . "/cscope.out"
-            if filereadable(cscope_file)
-                execute('cs add ' . cscope_file)
-                break
-            endif
-        endfor
+            " List is backwards search order, so reverse it.
+            for d in reverse(paths)
+                let cscope_file = d . "cscope.out"
+                if filereadable(cscope_file)
+                    call s:CscopeDbAdd(cscope_file)
+                    break
+                endif
+            endfor
+        endif
     endif
-
-    " show msg when any other cscope db added
-    set cscopeverbose
-
 
     """"""""""""" My cscope/vim key mappings
     "
