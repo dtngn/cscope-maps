@@ -33,7 +33,8 @@ endfunction
 
 " This tests to see if vim was configured with the '--enable-cscope' option
 " when it was compiled.  If it wasn't, time to recompile vim...
-if has("cscope")
+" This also test whether cscope executable is available in $PATH.
+if has("cscope") && executable("cscope")
 
     """"""""""""" Standard cscope/vim boilerplate
 
